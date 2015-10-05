@@ -10,6 +10,11 @@ var tls = require('tls');
 
 var fs = require('fs');
 var cipher_list = ['RC4-SHA', 'AES256-SHA'];
+if (common.hasFipsCrypto) {
+  /* RC4 is disallowed by FIPS 140-2 */
+  var index = cipher_list.indexOf('RC4-SHA');
+  cipher_list.splice(index, 1);
+}
 var cipher_version_pattern = /TLS|SSL/;
 var options = {
   key: fs.readFileSync(common.fixturesDir + '/keys/agent2-key.pem'),

@@ -19,7 +19,7 @@ var fs = require('fs');
 var options = {
   key: fs.readFileSync(common.fixturesDir + '/keys/agent2-key.pem'),
   cert: fs.readFileSync(common.fixturesDir + '/keys/agent2-cert.pem'),
-  ciphers: 'RC4-MD5'
+  ciphers: common.hasFipsCrypto? 'DES-CBC3-SHA' : 'RC4-MD5' // FIPS does not support MD5 - should we just skip this entire test?
 };
 
 var reply = 'I AM THE WALRUS'; // something recognizable

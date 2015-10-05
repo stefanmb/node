@@ -134,6 +134,10 @@ Object.defineProperty(exports, 'hasCrypto', {get: function() {
   return process.versions.openssl ? true : false;
 }});
 
+Object.defineProperty(exports, 'hasFipsCrypto', {get: function() {
+  return process.versions.openssl && process.versions.openssl.endsWith("-fips");
+}});
+
 if (exports.isWindows) {
   exports.PIPE = '\\\\.\\pipe\\libuv-test';
 } else {
