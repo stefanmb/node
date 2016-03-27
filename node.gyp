@@ -6,13 +6,14 @@
     'node_use_etw%': 'false',
     'node_use_perfctr%': 'false',
     'node_has_winsdk%': 'false',
+    'node_no_v8_platform%': 'false',
+    'node_shared%': 'false',
     'node_shared_zlib%': 'false',
     'node_shared_http_parser%': 'false',
     'node_shared_libuv%': 'false',
     'node_use_openssl%': 'true',
     'node_shared_openssl%': 'false',
     'node_v8_options%': '',
-    'node_target_type%': 'executable',
     'node_core_target_name%': 'node',
     'library_files': [
       'src/node.js',
@@ -90,6 +91,14 @@
       'deps/v8/tools/tickprocessor.js',
       'deps/v8/tools/SourceMap.js',
       'deps/v8/tools/tickprocessor-driver.js',
+    ],
+
+    'conditions': [
+      [ 'node_shared=="true"', {
+        'node_target_type%': 'shared_library',
+      }, {
+        'node_target_type%': 'executable',
+      }],
     ],
   },
 
@@ -207,6 +216,35 @@
 
 
       'conditions': [
+        [ 'node_shared=="false"', {
+          'dependencies': [
+            'deps/v8/tools/gyp/v8.gyp:v8',
+          ],
+
+          'msvs_settings': {
+            'VCManifestTool': {
+              'EmbedManifest': 'true',
+              'AdditionalManifestFiles': 'src/res/node.exe.extra.manifest'
+            }
+          },
+        }, {
+          'defines': [
+            'NODE_SHARED_MODE',
+          ],
+        }],
+        [ 'node_no_v8_platform=="false"', {
+          'include_dirs': [
+            'deps/v8', # include/v8_platform.h
+          ],
+
+          'dependencies': [
+            'deps/v8/tools/gyp/v8.gyp:v8_libplatform',
+          ],
+        }, {
+          'defines': [
+            'NODE_NO_V8_PLATFORM',
+          ],
+        }],
         [ 'node_tag!=""', {
           'defines': [ 'NODE_TAG="<(node_tag)"' ],
         }],
@@ -353,7 +391,7 @@
             'tools/msvs/genfiles/node_perfctr_provider.rc',
           ]
         } ],
-        [ 'v8_postmortem_support=="true"', {
+        [ 'node_shared=="false" and v8_postmortem_support=="true"', {
           'dependencies': [ 'deps/v8/tools/gyp/v8.gyp:postmortem-metadata' ],
           'conditions': [
             # -force_load is not applicable for the static library
@@ -433,7 +471,7 @@
           ],
         }],
         [ 'OS=="freebsd" or OS=="linux"', {
-          'ldflags': [ '-Wl,-z,noexecstack',
+          'ldflags': [ '-Wl,-z,noexecstack,--allow-multiple-definition',
                        '-Wl,--whole-archive <(V8_BASE)',
                        '-Wl,--no-whole-archive' ]
         }],
@@ -669,9 +707,17 @@
       'type': 'executable',
       'dependencies': [
         'deps/gtest/gtest.gyp:gtest',
-        'deps/v8/tools/gyp/v8.gyp:v8',
-        'deps/v8/tools/gyp/v8.gyp:v8_libplatform'
+        'deps/v8/tools/gyp/v8.gyp:v8'
       ],
+
+      'conditions': [
+        [ 'node_no_v8_platform=="false"', {
+          'dependencies': [
+            'deps/v8/tools/gyp/v8.gyp:v8_libplatform',
+          ],
+        }],
+      ],
+
       'include_dirs': [
         'src',
         'deps/v8/include'
