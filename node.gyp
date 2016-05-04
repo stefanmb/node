@@ -14,6 +14,7 @@
     'node_shared_openssl%': 'false',
     'node_use_mdb%': 'false',
     'node_v8_options%': '',
+    'node_target_type%': 'executable',
     'library_files': [
       'src/node.js',
       'lib/_debugger.js',
@@ -73,7 +74,7 @@
   'targets': [
     {
       'target_name': 'node',
-      'type': 'executable',
+      'type': '<(node_target_type)',
 
       'dependencies': [
         'node_js2c#host',
@@ -174,6 +175,12 @@
           # to avoid subtle bugs
           'cflags': [ '-fno-strict-aliasing' ],
         }],
+        # No node_main.cc for anything except executable
+        [ 'node_target_type!="executable"', {
+          'sources!': [
+             'src/node_main.cc',
+          ],
+        }],
         [ 'v8_enable_i18n_support==1', {
           'defines': [ 'NODE_HAVE_I18N_SUPPORT=1' ],
           'dependencies': [
@@ -215,6 +222,7 @@
                 ['OS in "linux freebsd"', {
                   'ldflags': [
                     '-Wl,--whole-archive <(PRODUCT_DIR)/libopenssl.a -Wl,--no-whole-archive',
+                    '-Wl,--no-whole-archive'
                   ],
                 }],
               ],
@@ -373,7 +381,9 @@
         [
           'OS in "linux freebsd" and node_shared_v8=="false"', {
             'ldflags': [
-              '-Wl,--whole-archive <(V8_BASE) -Wl,--no-whole-archive',
+              '-Wl,-z,noexecstack,--allow-multiple-definition',
+              '-Wl,--whole-archive <(V8_BASE)',
+              '-Wl,--no-whole-archive',
             ],
         }],
       ],

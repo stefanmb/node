@@ -203,6 +203,9 @@
             'cflags!': [ '-pthread' ],
             'ldflags!': [ '-pthread' ],
           }],
+          [ 'node_target_type=="shared_library"', {
+            'cflags': [ '-fPIC' ],
+          }],
         ],
       }],
       [ 'OS=="android"', {
