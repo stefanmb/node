@@ -71,6 +71,7 @@ if /i "%1"=="full-icu"      set i18n_arg=%1&goto arg-ok
 if /i "%1"=="intl-none"     set i18n_arg=%1&goto arg-ok
 if /i "%1"=="download-all"  set download_arg="--download=all"&goto arg-ok
 if /i "%1"=="build-release" set build_release=1&goto arg-ok
+if /i "%1"=="dll"           set shared="--enable-shared"&goto arg-ok
 
 echo Warning: ignoring invalid command line option `%1`.
 
@@ -151,7 +152,7 @@ goto exit
 if defined noprojgen goto msbuild
 
 @rem Generate the VS project.
-python configure %download_arg% %i18n_arg% %debug_arg% %nosnapshot_arg% %noetw_arg% %noperfctr_arg% --dest-cpu=%target_arch% --tag=%TAG%
+python configure %download_arg% %i18n_arg% %debug_arg% %nosnapshot_arg% %noetw_arg% %noperfctr_arg% %shared% --dest-cpu=%target_arch% --tag=%TAG%
 if errorlevel 1 goto create-msvs-files-failed
 if not exist node.sln goto create-msvs-files-failed
 echo Project files generated.

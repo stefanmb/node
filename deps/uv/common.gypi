@@ -3,8 +3,8 @@
     'visibility%': 'hidden',         # V8's visibility setting
     'target_arch%': 'ia32',          # set v8's target architecture
     'host_arch%': 'ia32',            # set v8's host architecture
-    'uv_library%': 'static_library', # allow override to 'shared_library' for DLL/.so builds
-    'component%': 'static_library',  # NB. these names match with what V8 expects
+    'uv_library%': 'shared_library', # allow override to 'shared_library' for DLL/.so builds
+    'component%': 'shared_library',  # NB. these names match with what V8 expects
     'msvs_multi_core_compile': '0',  # we do enable multicore compiles, but not using the V8 way
   },
 

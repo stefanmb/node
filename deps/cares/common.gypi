@@ -1,8 +1,8 @@
 {
   'variables': {
     'visibility%': 'hidden',
-    'library%': 'static_library', # allow override to 'shared_library' for DLL/.so builds
-    'component%': 'static_library',
+    'library%': 'shared_library', # allow override to 'shared_library' for DLL/.so builds
+    'component%': 'shared_library',
     'host_arch%': '',
     'target_arch%': ''
    },
