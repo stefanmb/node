@@ -117,6 +117,8 @@
 
       'dependencies': [
         'node_js2c#host',
+        'deps/v8/tools/gyp/v8.gyp:v8',
+        'deps/v8/tools/gyp/v8.gyp:v8_libplatform'
       ],
 
       'include_dirs': [
@@ -124,6 +126,7 @@
         'tools/msvs/genfiles',
         'deps/uv/src/ares',
         '<(SHARED_INTERMEDIATE_DIR)', # for node_natives.h
+        'deps/v8' # include/v8_platform.h
       ],
 
       'sources': [
@@ -234,10 +237,6 @@
         }, {
           'defines': [
             'NODE_SHARED_MODE',
-          ],
-
-          'libraries': [
-            '-lv8',
           ],
         }],
         [ 'node_no_v8_platform=="false"', {
@@ -494,7 +493,7 @@
           ],
         }],
         [ 'OS=="freebsd" or OS=="linux"', {
-          'ldflags': [ '-Wl,-z,noexecstack',
+          'ldflags': [ '-Wl,-z,noexecstack,--allow-multiple-definition',
                        '-Wl,--whole-archive <(V8_BASE)',
                        '-Wl,--no-whole-archive' ]
         }],
@@ -724,14 +723,10 @@
       'type': 'executable',
       'dependencies': [
         'deps/gtest/gtest.gyp:gtest',
+        'deps/v8/tools/gyp/v8.gyp:v8'
       ],
 
       'conditions': [
-        [ 'node_shared=="false"', {
-          'dependencies': [
-            'deps/v8/tools/gyp/v8.gyp:v8',
-          ],
-        }],
         [ 'node_no_v8_platform=="false"', {
           'dependencies': [
             'deps/v8/tools/gyp/v8.gyp:v8_libplatform',

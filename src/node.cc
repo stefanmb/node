@@ -186,7 +186,13 @@ static uv_async_t dispatch_debug_messages_async;
 
 static node::atomic<Isolate*> node_isolate;
 
-static struct {
+/* TODO: Figure out why anonymous struct causes linking error 
+ * when compiling as shared library:
+ * relocation R_X86_64_PC32 against undefined symbol 
+ * `_ZN4node5._2098platformE' 
+ * can not be used when making a shared object; recompile with -fPIC */
+
+static struct v8_plat {
 #ifdef NODE_NO_V8_PLATFORM
   void Initialize(int thread_pool_size) {}
   void PumpMessageLoop(Isolate* isolate) {}
@@ -206,7 +212,7 @@ static struct {
     platform = nullptr;
   }
 
-  static v8::Platform* platform;
+  v8::Platform* platform;
 #endif  // !NODE_NO_V8_PLATFORM
 } v8_platform;
 

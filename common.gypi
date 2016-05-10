@@ -293,6 +293,9 @@
             ],
             'ldflags!': [ '-rdynamic' ],
           }],
+          [ 'node_shared=="true"', {
+            'cflags': [ '-fPIC' ],
+          }],
         ],
       }],
       [ 'OS=="android"', {
