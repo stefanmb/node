@@ -139,6 +139,9 @@ def headers(action):
     'src/node_version.h',
   ], 'include/node/')
 
+  # Add all public API headers for add-ons.
+  subdir_files('include/node', 'include/node/', action)
+
   # Add the expfile that is created on AIX
   if sys.platform.startswith('aix'):
     action(['out/Release/node.exp'], 'include/node/')
