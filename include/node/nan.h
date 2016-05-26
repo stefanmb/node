@@ -39,7 +39,7 @@
 # define NAN_HAS_CPLUSPLUS_11 (__cplusplus >= 201103L)
 #endif
 
-#if NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION && !NAN_HAS_CPLUSPLUS_11
+#if !NAN_HAS_CPLUSPLUS_11
 # error This version of node/NAN/v8 requires a C++11 compiler
 #endif
 
@@ -138,11 +138,7 @@ namespace Nan {
 
 //=== RegistrationFunction =====================================================
 
-#if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-  typedef v8::Handle<v8::Object> ADDON_REGISTER_FUNCTION_ARGS_TYPE;
-#else
-  typedef v8::Local<v8::Object> ADDON_REGISTER_FUNCTION_ARGS_TYPE;
-#endif
+typedef v8::Local<v8::Object> ADDON_REGISTER_FUNCTION_ARGS_TYPE;
 
 #define NAN_MODULE_INIT(name)                                                  \
     void name(Nan::ADDON_REGISTER_FUNCTION_ARGS_TYPE target)
@@ -153,23 +149,15 @@ namespace Nan {
 
 //==============================================================================
 
-#if (NODE_MODULE_VERSION < NODE_0_12_MODULE_VERSION)
-typedef v8::Script             UnboundScript;
-typedef v8::Script             BoundScript;
-#else
 typedef v8::UnboundScript      UnboundScript;
 typedef v8::Script             BoundScript;
-#endif
 
-#if (NODE_MODULE_VERSION < ATOM_0_21_MODULE_VERSION)
-typedef v8::String::ExternalAsciiStringResource
-    ExternalOneByteStringResource;
-#else
+
 typedef v8::String::ExternalOneByteStringResource
     ExternalOneByteStringResource;
-#endif
 
-#if (NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION)
+
+
 template<typename T>
 class NonCopyablePersistentTraits :
     public v8::NonCopyablePersistentTraits<T> {};
@@ -183,20 +171,9 @@ class PersistentBase :
 
 template<typename T, typename M = v8::NonCopyablePersistentTraits<T> >
 class Persistent;
-#else
-template<typename T> class NonCopyablePersistentTraits;
-template<typename T> class PersistentBase;
-template<typename T, typename P> class WeakCallbackData;
-template<typename T, typename M = NonCopyablePersistentTraits<T> >
-class Persistent;
-#endif  // NODE_MODULE_VERSION
 
-#if defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION > 4 ||                      \
-  (V8_MAJOR_VERSION == 4 && defined(V8_MINOR_VERSION) && V8_MINOR_VERSION >= 3))
-# include "nan_maybe_43_inl.h"  // NOLINT(build/include)
-#else
-# include "nan_maybe_pre_43_inl.h"  // NOLINT(build/include)
-#endif
+
+#include "nan_maybe_43_inl.h"  // NOLINT(build/include)
 
 #include "nan_converters.h"  // NOLINT(build/include)
 #include "nan_new.h"  // NOLINT(build/include)
@@ -293,44 +270,22 @@ inline void nauv_key_set(nauv_key_t* key, void* value) {
 #endif
 #endif
 
-#if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-template<typename T>
-v8::Local<T> New(v8::Handle<T>);
-#endif
 
-#if defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION > 4 ||                      \
-  (V8_MAJOR_VERSION == 4 && defined(V8_MINOR_VERSION) && V8_MINOR_VERSION >= 3))
-  typedef v8::WeakCallbackType WeakCallbackType;
-#else
-struct WeakCallbackType {
-  enum E {kParameter, kInternalFields};
-  E type;
-  WeakCallbackType(E other) : type(other) {}  // NOLINT(runtime/explicit)
-  inline bool operator==(E other) { return other == this->type; }
-  inline bool operator!=(E other) { return !operator==(other); }
-};
-#endif
+
+typedef v8::WeakCallbackType WeakCallbackType;
+
 
 template<typename P> class WeakCallbackInfo;
 
-#if NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION
-# include "nan_persistent_12_inl.h"  // NOLINT(build/include)
-#else
-# include "nan_persistent_pre_12_inl.h"  // NOLINT(build/include)
-#endif
+
+#include "nan_persistent_12_inl.h"  // NOLINT(build/include)
 
 namespace imp {
   static const size_t kMaxLength = 0x3fffffff;
   // v8::String::REPLACE_INVALID_UTF8 was introduced
   // in node.js v0.10.29 and v0.8.27.
-#if NODE_MAJOR_VERSION > 0 || \
-    NODE_MINOR_VERSION > 10 || \
-    NODE_MINOR_VERSION == 10 && NODE_PATCH_VERSION >= 29 || \
-    NODE_MINOR_VERSION == 8 && NODE_PATCH_VERSION >= 27
+
   static const unsigned kReplaceInvalidUtf8 = v8::String::REPLACE_INVALID_UTF8;
-#else
-  static const unsigned kReplaceInvalidUtf8 = 0;
-#endif
 }  // end of namespace imp
 
 //=== HandleScope ==============================================================
@@ -339,17 +294,10 @@ class HandleScope {
   v8::HandleScope scope;
 
  public:
-#if NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION
   inline HandleScope() : scope(v8::Isolate::GetCurrent()) {}
   inline static int NumberOfHandles() {
     return v8::HandleScope::NumberOfHandles(v8::Isolate::GetCurrent());
   }
-#else
-  inline HandleScope() : scope() {}
-  inline static int NumberOfHandles() {
-    return v8::HandleScope::NumberOfHandles();
-  }
-#endif
 
  private:
   // Make it hard to create heap-allocated or illegal handle scopes by
@@ -362,7 +310,6 @@ class HandleScope {
 
 class EscapableHandleScope {
  public:
-#if NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION
   inline EscapableHandleScope() : scope(v8::Isolate::GetCurrent()) {}
 
   inline static int NumberOfHandles() {
@@ -376,21 +323,6 @@ class EscapableHandleScope {
 
  private:
   v8::EscapableHandleScope scope;
-#else
-  inline EscapableHandleScope() : scope() {}
-
-  inline static int NumberOfHandles() {
-    return v8::HandleScope::NumberOfHandles();
-  }
-
-  template<typename T>
-  inline v8::Local<T> Escape(v8::Local<T> value) {
-    return scope.Close(value);
-  }
-
- private:
-  v8::HandleScope scope;
-#endif
 
  private:
   // Make it hard to create heap-allocated or illegal handle scopes by
@@ -408,36 +340,23 @@ class TryCatch {
   friend void FatalException(const TryCatch&);
 
  public:
-#if NODE_MODULE_VERSION > NODE_0_12_MODULE_VERSION
   TryCatch() : try_catch_(v8::Isolate::GetCurrent()) {}
-#endif
 
   NAN_INLINE bool HasCaught() const { return try_catch_.HasCaught(); }
 
   NAN_INLINE bool CanContinue() const { return try_catch_.CanContinue(); }
 
   NAN_INLINE v8::Local<v8::Value> ReThrow() {
-#if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-    return New(try_catch_.ReThrow());
-#else
     return try_catch_.ReThrow();
-#endif
   }
 
   NAN_INLINE v8::Local<v8::Value> Exception() const {
     return try_catch_.Exception();
   }
 
-#if defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION > 4 ||                      \
-  (V8_MAJOR_VERSION == 4 && defined(V8_MINOR_VERSION) && V8_MINOR_VERSION >= 3))
   NAN_INLINE v8::MaybeLocal<v8::Value> StackTrace() const {
     return try_catch_.StackTrace(GetCurrentContext());
   }
-#else
-  NAN_INLINE MaybeLocal<v8::Value> StackTrace() const {
-    return MaybeLocal<v8::Value>(try_catch_.StackTrace());
-  }
-#endif
 
   NAN_INLINE v8::Local<v8::Message> Message() const {
     return try_catch_.Message();
@@ -455,7 +374,7 @@ class TryCatch {
 //============ =================================================================
 
 /* node 0.12  */
-#if NODE_MODULE_VERSION >= NODE_0_12_MODULE_VERSION
+
   NAN_INLINE
   void SetCounterFunction(v8::CounterLookupCallback cb) {
     v8::Isolate::GetCurrent()->SetCounterFunction(cb);
@@ -471,17 +390,11 @@ class TryCatch {
     v8::Isolate::GetCurrent()->SetAddHistogramSampleFunction(cb);
   }
 
-#if defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION > 4 ||                      \
-  (V8_MAJOR_VERSION == 4 && defined(V8_MINOR_VERSION) && V8_MINOR_VERSION >= 3))
+
   NAN_INLINE bool IdleNotification(int idle_time_in_ms) {
     return v8::Isolate::GetCurrent()->IdleNotificationDeadline(
         idle_time_in_ms * 0.001);
   }
-# else
-  NAN_INLINE bool IdleNotification(int idle_time_in_ms) {
-    return v8::Isolate::GetCurrent()->IdleNotification(idle_time_in_ms);
-  }
-#endif
 
   NAN_INLINE void LowMemoryNotification() {
     v8::Isolate::GetCurrent()->LowMemoryNotification();
@@ -490,70 +403,23 @@ class TryCatch {
   NAN_INLINE void ContextDisposedNotification() {
     v8::Isolate::GetCurrent()->ContextDisposedNotification();
   }
-#else
-  NAN_INLINE
-  void SetCounterFunction(v8::CounterLookupCallback cb) {
-    v8::V8::SetCounterFunction(cb);
-  }
 
-  NAN_INLINE
-  void SetCreateHistogramFunction(v8::CreateHistogramCallback cb) {
-    v8::V8::SetCreateHistogramFunction(cb);
-  }
 
-  NAN_INLINE
-  void SetAddHistogramSampleFunction(v8::AddHistogramSampleCallback cb) {
-    v8::V8::SetAddHistogramSampleFunction(cb);
-  }
 
-  NAN_INLINE bool IdleNotification(int idle_time_in_ms) {
-    return v8::V8::IdleNotification(idle_time_in_ms);
-  }
-
-  NAN_INLINE void LowMemoryNotification() {
-    v8::V8::LowMemoryNotification();
-  }
-
-  NAN_INLINE void ContextDisposedNotification() {
-    v8::V8::ContextDisposedNotification();
-  }
-#endif
-
-#if (NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION)  // Node 0.12
   NAN_INLINE v8::Local<v8::Primitive> Undefined() {
-# if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-    EscapableHandleScope scope;
-    return scope.Escape(New(v8::Undefined(v8::Isolate::GetCurrent())));
-# else
     return v8::Undefined(v8::Isolate::GetCurrent());
-# endif
   }
 
   NAN_INLINE v8::Local<v8::Primitive> Null() {
-# if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-    EscapableHandleScope scope;
-    return scope.Escape(New(v8::Null(v8::Isolate::GetCurrent())));
-# else
     return v8::Null(v8::Isolate::GetCurrent());
-# endif
   }
 
   NAN_INLINE v8::Local<v8::Boolean> True() {
-# if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-    EscapableHandleScope scope;
-    return scope.Escape(New(v8::True(v8::Isolate::GetCurrent())));
-# else
     return v8::True(v8::Isolate::GetCurrent());
-# endif
   }
 
   NAN_INLINE v8::Local<v8::Boolean> False() {
-# if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-    EscapableHandleScope scope;
-    return scope.Escape(New(v8::False(v8::Isolate::GetCurrent())));
-# else
     return v8::False(v8::Isolate::GetCurrent());
-# endif
   }
 
   NAN_INLINE v8::Local<v8::String> EmptyString() {
@@ -600,13 +466,8 @@ class TryCatch {
 # define NAN_GC_CALLBACK(name)                                                 \
     void name(v8::Isolate *isolate, v8::GCType type, v8::GCCallbackFlags flags)
 
-#if NODE_MODULE_VERSION <= NODE_4_0_MODULE_VERSION
-  typedef v8::Isolate::GCEpilogueCallback GCEpilogueCallback;
-  typedef v8::Isolate::GCPrologueCallback GCPrologueCallback;
-#else
   typedef v8::Isolate::GCCallback GCEpilogueCallback;
   typedef v8::Isolate::GCCallback GCPrologueCallback;
-#endif
 
   NAN_INLINE void AddGCEpilogueCallback(
       GCEpilogueCallback callback
@@ -673,23 +534,16 @@ class TryCatch {
   NAN_INLINE MaybeLocal<v8::Object> NewBuffer(
       char *data
     , size_t length
-#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
     , node::Buffer::FreeCallback callback
-#else
-    , node::smalloc::FreeCallback callback
-#endif
     , void *hint
   ) {
     // arbitrary buffer lengths requires
     // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
     assert(length <= imp::kMaxLength && "too large buffer");
-#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
+
     return node::Buffer::New(
         v8::Isolate::GetCurrent(), data, length, callback, hint);
-#else
-    return MaybeLocal<v8::Object>(node::Buffer::New(
-        v8::Isolate::GetCurrent(), data, length, callback, hint));
-#endif
+
   }
 
   NAN_INLINE MaybeLocal<v8::Object> CopyBuffer(
@@ -699,26 +553,18 @@ class TryCatch {
     // arbitrary buffer lengths requires
     // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
     assert(size <= imp::kMaxLength && "too large buffer");
-#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
+
     return node::Buffer::Copy(
         v8::Isolate::GetCurrent(), data, size);
-#else
-    return MaybeLocal<v8::Object>(node::Buffer::New(
-        v8::Isolate::GetCurrent(), data, size));
-#endif
   }
 
   NAN_INLINE MaybeLocal<v8::Object> NewBuffer(uint32_t size) {
     // arbitrary buffer lengths requires
     // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
     assert(size <= imp::kMaxLength && "too large buffer");
-#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
+
     return node::Buffer::New(
         v8::Isolate::GetCurrent(), size);
-#else
-    return MaybeLocal<v8::Object>(node::Buffer::New(
-        v8::Isolate::GetCurrent(), size));
-#endif
   }
 
   NAN_INLINE MaybeLocal<v8::Object> NewBuffer(
@@ -728,16 +574,11 @@ class TryCatch {
     // arbitrary buffer lengths requires
     // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
     assert(size <= imp::kMaxLength && "too large buffer");
-#if NODE_MODULE_VERSION > IOJS_2_0_MODULE_VERSION
+
     return node::Buffer::New(v8::Isolate::GetCurrent(), data, size);
-#else
-    return MaybeLocal<v8::Object>(
-        node::Buffer::Use(v8::Isolate::GetCurrent(), data, size));
-#endif
   }
 
-#if defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION > 4 ||                      \
-  (V8_MAJOR_VERSION == 4 && defined(V8_MINOR_VERSION) && V8_MINOR_VERSION >= 3))
+
   NAN_INLINE MaybeLocal<v8::String>
   NewOneByteString(const uint8_t * value, int length = -1) {
     return v8::String::NewFromOneByte(v8::Isolate::GetCurrent(), value,
@@ -770,58 +611,15 @@ class TryCatch {
   ) {
     return script->Run(GetCurrentContext());
   }
-#else
-  NAN_INLINE MaybeLocal<v8::String>
-  NewOneByteString(const uint8_t * value, int length = -1) {
-    return MaybeLocal<v8::String>(
-        v8::String::NewFromOneByte(
-            v8::Isolate::GetCurrent()
-          , value
-          , v8::String::kNormalString, length));
-  }
 
-  NAN_INLINE MaybeLocal<BoundScript> CompileScript(
-      v8::Local<v8::String> s
-    , const v8::ScriptOrigin& origin
-  ) {
-    v8::ScriptCompiler::Source source(s, origin);
-    return MaybeLocal<BoundScript>(
-        v8::ScriptCompiler::Compile(v8::Isolate::GetCurrent(), &source));
-  }
-
-  NAN_INLINE MaybeLocal<BoundScript> CompileScript(
-      v8::Local<v8::String> s
-  ) {
-    v8::ScriptCompiler::Source source(s);
-    return MaybeLocal<BoundScript>(
-        v8::ScriptCompiler::Compile(v8::Isolate::GetCurrent(), &source));
-  }
-
-  NAN_INLINE MaybeLocal<v8::Value> RunScript(
-      v8::Local<UnboundScript> script
-  ) {
-    return MaybeLocal<v8::Value>(script->BindToCurrentContext()->Run());
-  }
-
-  NAN_INLINE MaybeLocal<v8::Value> RunScript(
-      v8::Local<BoundScript> script
-  ) {
-    return MaybeLocal<v8::Value>(script->Run());
-  }
-#endif
 
   NAN_INLINE v8::Local<v8::Value> MakeCallback(
       v8::Local<v8::Object> target
     , v8::Local<v8::Function> func
     , int argc
     , v8::Local<v8::Value>* argv) {
-#if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-    return New(node::MakeCallback(
-        v8::Isolate::GetCurrent(), target, func, argc, argv));
-#else
     return node::MakeCallback(
         v8::Isolate::GetCurrent(), target, func, argc, argv);
-#endif
   }
 
   NAN_INLINE v8::Local<v8::Value> MakeCallback(
@@ -829,13 +627,8 @@ class TryCatch {
     , v8::Local<v8::String> symbol
     , int argc
     , v8::Local<v8::Value>* argv) {
-#if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-    return New(node::MakeCallback(
-        v8::Isolate::GetCurrent(), target, symbol, argc, argv));
-#else
     return node::MakeCallback(
         v8::Isolate::GetCurrent(), target, symbol, argc, argv);
-#endif
   }
 
   NAN_INLINE v8::Local<v8::Value> MakeCallback(
@@ -843,13 +636,8 @@ class TryCatch {
     , const char* method
     , int argc
     , v8::Local<v8::Value>* argv) {
-#if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-    return New(node::MakeCallback(
-        v8::Isolate::GetCurrent(), target, method, argc, argv));
-#else
     return node::MakeCallback(
         v8::Isolate::GetCurrent(), target, method, argc, argv);
-#endif
   }
 
   NAN_INLINE void FatalException(const TryCatch& try_catch) {
@@ -930,326 +718,6 @@ class Utf8String {
   char str_st_[1024];
 };
 
-#else  // Node 0.8 and 0.10
-  NAN_INLINE v8::Local<v8::Primitive> Undefined() {
-    EscapableHandleScope scope;
-    return scope.Escape(New(v8::Undefined()));
-  }
-
-  NAN_INLINE v8::Local<v8::Primitive> Null() {
-    EscapableHandleScope scope;
-    return scope.Escape(New(v8::Null()));
-  }
-
-  NAN_INLINE v8::Local<v8::Boolean> True() {
-    EscapableHandleScope scope;
-    return scope.Escape(New(v8::True()));
-  }
-
-  NAN_INLINE v8::Local<v8::Boolean> False() {
-    EscapableHandleScope scope;
-    return scope.Escape(New(v8::False()));
-  }
-
-  NAN_INLINE v8::Local<v8::String> EmptyString() {
-    return v8::String::Empty();
-  }
-
-  NAN_INLINE int AdjustExternalMemory(int bc) {
-    return static_cast<int>(v8::V8::AdjustAmountOfExternalAllocatedMemory(bc));
-  }
-
-  NAN_INLINE void SetTemplate(
-      v8::Local<v8::Template> templ
-    , const char *name
-    , v8::Local<v8::Data> value) {
-    templ->Set(name, value);
-  }
-
-  NAN_INLINE void SetTemplate(
-      v8::Local<v8::Template> templ
-    , v8::Local<v8::String> name
-    , v8::Local<v8::Data> value
-    , v8::PropertyAttribute attributes) {
-    templ->Set(name, value, attributes);
-  }
-
-  NAN_INLINE v8::Local<v8::Context> GetCurrentContext() {
-    return v8::Context::GetCurrent();
-  }
-
-  NAN_INLINE void* GetInternalFieldPointer(
-      v8::Local<v8::Object> object
-    , int index) {
-    return object->GetPointerFromInternalField(index);
-  }
-
-  NAN_INLINE void SetInternalFieldPointer(
-      v8::Local<v8::Object> object
-    , int index
-    , void* value) {
-    object->SetPointerInInternalField(index, value);
-  }
-
-# define NAN_GC_CALLBACK(name)                                                 \
-    void name(v8::GCType type, v8::GCCallbackFlags flags)
-
-  NAN_INLINE void AddGCEpilogueCallback(
-    v8::GCEpilogueCallback callback
-  , v8::GCType gc_type_filter = v8::kGCTypeAll) {
-    v8::V8::AddGCEpilogueCallback(callback, gc_type_filter);
-  }
-  NAN_INLINE void RemoveGCEpilogueCallback(
-    v8::GCEpilogueCallback callback) {
-    v8::V8::RemoveGCEpilogueCallback(callback);
-  }
-  NAN_INLINE void AddGCPrologueCallback(
-    v8::GCPrologueCallback callback
-  , v8::GCType gc_type_filter = v8::kGCTypeAll) {
-    v8::V8::AddGCPrologueCallback(callback, gc_type_filter);
-  }
-  NAN_INLINE void RemoveGCPrologueCallback(
-    v8::GCPrologueCallback callback) {
-    v8::V8::RemoveGCPrologueCallback(callback);
-  }
-  NAN_INLINE void GetHeapStatistics(
-    v8::HeapStatistics *heap_statistics) {
-    v8::V8::GetHeapStatistics(heap_statistics);
-  }
-
-# define X(NAME)                                                               \
-    NAN_INLINE v8::Local<v8::Value> NAME(const char *msg) {                    \
-      EscapableHandleScope scope;                                              \
-      return scope.Escape(v8::Exception::NAME(New(msg).ToLocalChecked()));     \
-    }                                                                          \
-                                                                               \
-    NAN_INLINE                                                                 \
-    v8::Local<v8::Value> NAME(v8::Local<v8::String> msg) {                     \
-      return v8::Exception::NAME(msg);                                         \
-    }                                                                          \
-                                                                               \
-    NAN_INLINE void Throw ## NAME(const char *msg) {                           \
-      HandleScope scope;                                                       \
-      v8::ThrowException(v8::Exception::NAME(New(msg).ToLocalChecked()));      \
-    }                                                                          \
-                                                                               \
-    NAN_INLINE                                                                 \
-    void Throw ## NAME(v8::Local<v8::String> errmsg) {                         \
-      v8::ThrowException(v8::Exception::NAME(errmsg));                         \
-    }
-
-  X(Error)
-  X(RangeError)
-  X(ReferenceError)
-  X(SyntaxError)
-  X(TypeError)
-
-# undef X
-
-  NAN_INLINE void ThrowError(v8::Local<v8::Value> error) {
-    v8::ThrowException(error);
-  }
-
-  NAN_INLINE MaybeLocal<v8::Object> NewBuffer(
-      char *data
-    , size_t length
-    , node::Buffer::free_callback callback
-    , void *hint
-  ) {
-    EscapableHandleScope scope;
-    // arbitrary buffer lengths requires
-    // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
-    assert(length <= imp::kMaxLength && "too large buffer");
-    return MaybeLocal<v8::Object>(scope.Escape(
-        New(node::Buffer::New(data, length, callback, hint)->handle_)));
-  }
-
-  NAN_INLINE MaybeLocal<v8::Object> CopyBuffer(
-      const char *data
-    , uint32_t size
-  ) {
-    EscapableHandleScope scope;
-    // arbitrary buffer lengths requires
-    // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
-    assert(size <= imp::kMaxLength && "too large buffer");
-#if NODE_MODULE_VERSION >= NODE_0_10_MODULE_VERSION
-    return MaybeLocal<v8::Object>(
-        scope.Escape(New(node::Buffer::New(data, size)->handle_)));
-#else
-    return MaybeLocal<v8::Object>(scope.Escape(
-        New(node::Buffer::New(const_cast<char*>(data), size)->handle_)));
-#endif
-  }
-
-  NAN_INLINE MaybeLocal<v8::Object> NewBuffer(uint32_t size) {
-    // arbitrary buffer lengths requires
-    // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
-    EscapableHandleScope scope;
-    assert(size <= imp::kMaxLength && "too large buffer");
-    return MaybeLocal<v8::Object>(
-        scope.Escape(New(node::Buffer::New(size)->handle_)));
-  }
-
-  NAN_INLINE void FreeData(char *data, void *hint) {
-    (void) hint;  // unused
-    delete[] data;
-  }
-
-  NAN_INLINE MaybeLocal<v8::Object> NewBuffer(
-      char* data
-    , uint32_t size
-  ) {
-    EscapableHandleScope scope;
-    // arbitrary buffer lengths requires
-    // NODE_MODULE_VERSION >= IOJS_3_0_MODULE_VERSION
-    assert(size <= imp::kMaxLength && "too large buffer");
-    return MaybeLocal<v8::Object>(scope.Escape(New(
-        node::Buffer::New(data, size, FreeData, NULL)->handle_)));
-  }
-
-namespace imp {
-NAN_INLINE void
-widenString(std::vector<uint16_t> *ws, const uint8_t *s, int l) {
-  size_t len = static_cast<size_t>(l);
-  if (l < 0) {
-    len = strlen(reinterpret_cast<const char*>(s));
-  }
-  assert(len <= INT_MAX && "string too long");
-  ws->resize(len);
-  std::copy(s, s + len, ws->begin());  // NOLINT(build/include_what_you_use)
-}
-}  // end of namespace imp
-
-  NAN_INLINE MaybeLocal<v8::String>
-  NewOneByteString(const uint8_t * value, int length = -1) {
-    std::vector<uint16_t> wideString;  // NOLINT(build/include_what_you_use)
-    imp::widenString(&wideString, value, length);
-    return imp::Factory<v8::String>::return_t(v8::String::New(
-        &wideString.front(), static_cast<int>(wideString.size())));
-  }
-
-  NAN_INLINE MaybeLocal<BoundScript> CompileScript(
-      v8::Local<v8::String> s
-    , const v8::ScriptOrigin& origin
-  ) {
-    return MaybeLocal<BoundScript>(
-        v8::Script::Compile(s, const_cast<v8::ScriptOrigin *>(&origin)));
-  }
-
-  NAN_INLINE MaybeLocal<BoundScript> CompileScript(
-    v8::Local<v8::String> s
-  ) {
-    return MaybeLocal<BoundScript>(v8::Script::Compile(s));
-  }
-
-  NAN_INLINE
-  MaybeLocal<v8::Value> RunScript(v8::Local<v8::Script> script) {
-    return MaybeLocal<v8::Value>(script->Run());
-  }
-
-  NAN_INLINE v8::Local<v8::Value> MakeCallback(
-      v8::Local<v8::Object> target
-    , v8::Local<v8::Function> func
-    , int argc
-    , v8::Local<v8::Value>* argv) {
-    return New(node::MakeCallback(target, func, argc, argv));
-  }
-
-  NAN_INLINE v8::Local<v8::Value> MakeCallback(
-      v8::Local<v8::Object> target
-    , v8::Local<v8::String> symbol
-    , int argc
-    , v8::Local<v8::Value>* argv) {
-    return New(node::MakeCallback(target, symbol, argc, argv));
-  }
-
-  NAN_INLINE v8::Local<v8::Value> MakeCallback(
-      v8::Local<v8::Object> target
-    , const char* method
-    , int argc
-    , v8::Local<v8::Value>* argv) {
-    return New(node::MakeCallback(target, method, argc, argv));
-  }
-
-  NAN_INLINE void FatalException(const TryCatch& try_catch) {
-    node::FatalException(const_cast<v8::TryCatch &>(try_catch.try_catch_));
-  }
-
-  NAN_INLINE v8::Local<v8::Value> ErrnoException(
-          int errorno
-       ,  const char* syscall = NULL
-       ,  const char* message = NULL
-       ,  const char* path = NULL) {
-    return node::ErrnoException(errorno, syscall, message, path);
-  }
-
-  NAN_DEPRECATED NAN_INLINE v8::Local<v8::Value> NanErrnoException(
-          int errorno
-       ,  const char* syscall = NULL
-       ,  const char* message = NULL
-       ,  const char* path = NULL) {
-    return ErrnoException(errorno, syscall, message, path);
-  }
-
-
-  template<typename T>
-  NAN_INLINE void SetIsolateData(
-      v8::Isolate *isolate
-    , T *data
-  ) {
-      isolate->SetData(data);
-  }
-
-  template<typename T>
-  NAN_INLINE T *GetIsolateData(
-      v8::Isolate *isolate
-  ) {
-      return static_cast<T*>(isolate->GetData());
-  }
-
-class Utf8String {
- public:
-  NAN_INLINE explicit Utf8String(v8::Local<v8::Value> from) :
-      length_(0), str_(str_st_) {
-    if (!from.IsEmpty()) {
-      v8::Local<v8::String> string = from->ToString();
-      if (!string.IsEmpty()) {
-        size_t len = 3 * string->Length() + 1;
-        assert(len <= INT_MAX);
-        if (len > sizeof (str_st_)) {
-          str_ = static_cast<char*>(malloc(len));
-          assert(str_ != 0);
-        }
-        const int flags =
-            v8::String::NO_NULL_TERMINATION | imp::kReplaceInvalidUtf8;
-        length_ = string->WriteUtf8(str_, static_cast<int>(len), 0, flags);
-        str_[length_] = '\0';
-      }
-    }
-  }
-
-  NAN_INLINE int length() const {
-    return length_;
-  }
-
-  NAN_INLINE char* operator*() { return str_; }
-  NAN_INLINE const char* operator*() const { return str_; }
-
-  NAN_INLINE ~Utf8String() {
-    if (str_ != str_st_) {
-      free(str_);
-    }
-  }
-
- private:
-  NAN_DISALLOW_ASSIGN_COPY_MOVE(Utf8String)
-
-  int length_;
-  char *str_;
-  char str_st_[1024];
-};
-
-#endif  // NODE_MODULE_VERSION
 
 typedef void (*FreeCallback)(char *data, void *hint);
 
@@ -1419,22 +887,14 @@ class Callback {
   Call(v8::Local<v8::Object> target
      , int argc
      , v8::Local<v8::Value> argv[]) const {
-#if (NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION)
     v8::Isolate *isolate = v8::Isolate::GetCurrent();
     return Call_(isolate, target, argc, argv);
-#else
-    return Call_(target, argc, argv);
-#endif
   }
 
   NAN_INLINE v8::Local<v8::Value>
   Call(int argc, v8::Local<v8::Value> argv[]) const {
-#if (NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION)
     v8::Isolate *isolate = v8::Isolate::GetCurrent();
     return Call_(isolate, isolate->GetCurrentContext()->Global(), argc, argv);
-#else
-    return Call_(v8::Context::GetCurrent()->Global(), argc, argv);
-#endif
   }
 
  private:
@@ -1442,7 +902,7 @@ class Callback {
   Persistent<v8::Object> handle;
   static const uint32_t kCallbackIndex = 0;
 
-#if (NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION)
+
   v8::Local<v8::Value> Call_(v8::Isolate *isolate
                            , v8::Local<v8::Object> target
                            , int argc
@@ -1451,15 +911,6 @@ class Callback {
 
     v8::Local<v8::Function> callback = New(handle)->
         Get(kCallbackIndex).As<v8::Function>();
-# if NODE_MODULE_VERSION < IOJS_3_0_MODULE_VERSION
-    return scope.Escape(New(node::MakeCallback(
-        isolate
-      , target
-      , callback
-      , argc
-      , argv
-    )));
-# else
     return scope.Escape(node::MakeCallback(
         isolate
       , target
@@ -1467,24 +918,7 @@ class Callback {
       , argc
       , argv
     ));
-# endif
   }
-#else
-  v8::Local<v8::Value> Call_(v8::Local<v8::Object> target
-                           , int argc
-                           , v8::Local<v8::Value> argv[]) const {
-    EscapableHandleScope scope;
-
-    v8::Local<v8::Function> callback = New(handle)->
-        Get(kCallbackIndex).As<v8::Function>();
-    return scope.Escape(New(node::MakeCallback(
-        target
-      , callback
-      , argc
-      , argv
-    )));
-  }
-#endif
 };
 
 /* abstract */ class AsyncWorker {
@@ -1718,34 +1152,23 @@ namespace imp {
 inline
 ExternalOneByteStringResource const*
 GetExternalResource(v8::Local<v8::String> str) {
-#if NODE_MODULE_VERSION < ATOM_0_21_MODULE_VERSION
-    return str->GetExternalAsciiStringResource();
-#else
     return str->GetExternalOneByteStringResource();
-#endif
 }
 
 inline
 bool
 IsExternal(v8::Local<v8::String> str) {
-#if NODE_MODULE_VERSION < ATOM_0_21_MODULE_VERSION
-    return str->IsExternalAscii();
-#else
     return str->IsExternalOneByte();
-#endif
 }
 
 }  // end of namespace imp
 
 enum Encoding {ASCII, UTF8, BASE64, UCS2, BINARY, HEX, BUFFER};
 
-#if NODE_MODULE_VERSION < NODE_0_10_MODULE_VERSION
-# include "nan_string_bytes.h"  // NOLINT(build/include)
-#endif
 
 NAN_INLINE v8::Local<v8::Value> Encode(
     const void *buf, size_t len, enum Encoding encoding = BINARY) {
-#if (NODE_MODULE_VERSION >= ATOM_0_21_MODULE_VERSION)
+
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   node::encoding node_enc = static_cast<node::encoding>(encoding);
 
@@ -1761,35 +1184,15 @@ NAN_INLINE v8::Local<v8::Value> Encode(
       , len
       , node_enc);
   }
-#elif (NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION)
-  return node::Encode(
-      v8::Isolate::GetCurrent()
-    , buf, len
-    , static_cast<node::encoding>(encoding));
-#else
-# if NODE_MODULE_VERSION >= NODE_0_10_MODULE_VERSION
-  return node::Encode(buf, len, static_cast<node::encoding>(encoding));
-# else
-  return imp::Encode(reinterpret_cast<const char*>(buf), len, encoding);
-# endif
-#endif
 }
 
 NAN_INLINE ssize_t DecodeBytes(
     v8::Local<v8::Value> val, enum Encoding encoding = BINARY) {
-#if (NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION)
+
   return node::DecodeBytes(
       v8::Isolate::GetCurrent()
     , val
     , static_cast<node::encoding>(encoding));
-#else
-# if (NODE_MODULE_VERSION < NODE_0_10_MODULE_VERSION)
-  if (encoding == BUFFER) {
-    return node::DecodeBytes(val, node::BINARY);
-  }
-# endif
-  return node::DecodeBytes(val, static_cast<node::encoding>(encoding));
-#endif
 }
 
 NAN_INLINE ssize_t DecodeWrite(
@@ -1797,25 +1200,13 @@ NAN_INLINE ssize_t DecodeWrite(
   , size_t len
   , v8::Local<v8::Value> val
   , enum Encoding encoding = BINARY) {
-#if (NODE_MODULE_VERSION > NODE_0_10_MODULE_VERSION)
+
   return node::DecodeWrite(
       v8::Isolate::GetCurrent()
     , buf
     , len
     , val
     , static_cast<node::encoding>(encoding));
-#else
-# if (NODE_MODULE_VERSION < NODE_0_10_MODULE_VERSION)
-  if (encoding == BUFFER) {
-    return node::DecodeWrite(buf, len, val, node::BINARY);
-  }
-# endif
-  return node::DecodeWrite(
-      buf
-    , len
-    , val
-    , static_cast<node::encoding>(encoding));
-#endif
 }
 
 NAN_INLINE void SetPrototypeTemplate(
@@ -2051,18 +1442,8 @@ inline void SetNamedPropertyHandler(
     obj->SetInternalField(imp::kDataIndex, data);
   }
 
-#if NODE_MODULE_VERSION > NODE_0_12_MODULE_VERSION
   tpl->SetHandler(v8::NamedPropertyHandlerConfiguration(
       getter_, setter_, query_, deleter_, enumerator_, obj));
-#else
-  tpl->SetNamedPropertyHandler(
-      getter_
-    , setter_
-    , query_
-    , deleter_
-    , enumerator_
-    , obj);
-#endif
 }
 
 inline void SetIndexedPropertyHandler(
@@ -2121,18 +1502,8 @@ inline void SetIndexedPropertyHandler(
     obj->SetInternalField(imp::kDataIndex, data);
   }
 
-#if NODE_MODULE_VERSION > NODE_0_12_MODULE_VERSION
   tpl->SetHandler(v8::IndexedPropertyHandlerConfiguration(
       getter_, setter_, query_, deleter_, enumerator_, obj));
-#else
-  tpl->SetIndexedPropertyHandler(
-      getter_
-    , setter_
-    , query_
-    , deleter_
-    , enumerator_
-    , obj);
-#endif
 }
 
 inline void SetCallHandler(
