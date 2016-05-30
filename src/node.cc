@@ -144,10 +144,9 @@ static const int v8_default_thread_pool_size = 4;
 static int v8_thread_pool_size = v8_default_thread_pool_size;
 static bool prof_process = false;
 static bool v8_is_profiling = false;
-static bool node_is_initialized = false;
-static node_module* modpending;
-static node_module* modlist_builtin;
-static node_module* modlist_linked;
+/* TODO: Fix accessibility of these fields */
+extern node_module* modpending;
+extern bool node_is_initialized;
 static node_module* modlist_addon;
 
 #if defined(NODE_HAVE_I18N_SUPPORT)
@@ -2253,47 +2252,6 @@ void CPUUsage(const FunctionCallbackInfo<Value>& args) {
   // Set the Float64Array elements to be user / system values in microseconds.
   fields[0] = MICROS_PER_SEC * rusage.ru_utime.tv_sec + rusage.ru_utime.tv_usec;
   fields[1] = MICROS_PER_SEC * rusage.ru_stime.tv_sec + rusage.ru_stime.tv_usec;
-}
-
-extern "C" void node_module_register(void* m) {
-  struct node_module* mp = reinterpret_cast<struct node_module*>(m);
-
-  if (mp->nm_flags & NM_F_BUILTIN) {
-    mp->nm_link = modlist_builtin;
-    modlist_builtin = mp;
-  } else if (!node_is_initialized) {
-    // "Linked" modules are included as part of the node project.
-    // Like builtins they are registered *before* node::Init runs.
-    mp->nm_flags = NM_F_LINKED;
-    mp->nm_link = modlist_linked;
-    modlist_linked = mp;
-  } else {
-    modpending = mp;
-  }
-}
-
-struct node_module* get_builtin_module(const char* name) {
-  struct node_module* mp;
-
-  for (mp = modlist_builtin; mp != nullptr; mp = mp->nm_link) {
-    if (strcmp(mp->nm_modname, name) == 0)
-      break;
-  }
-
-  CHECK(mp == nullptr || (mp->nm_flags & NM_F_BUILTIN) != 0);
-  return (mp);
-}
-
-struct node_module* get_linked_module(const char* name) {
-  struct node_module* mp;
-
-  for (mp = modlist_linked; mp != nullptr; mp = mp->nm_link) {
-    if (strcmp(mp->nm_modname, name) == 0)
-      break;
-  }
-
-  CHECK(mp == nullptr || (mp->nm_flags & NM_F_LINKED) != 0);
-  return mp;
 }
 
 typedef void (UV_DYNAMIC* extInit)(Local<Object> exports);

@@ -12,7 +12,7 @@ tmp/
 test/tmp*/
 iojs
 iojs_g
-node
+/node
 node_g
 *.swp
 .benchmark_reports

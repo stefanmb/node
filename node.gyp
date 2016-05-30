@@ -113,6 +113,7 @@
       ],
 
       'include_dirs': [
+        'include/node', # TODO Remove the 'node' subdir
         'src',
         'tools/msvs/genfiles',
         'deps/uv/src/ares',
@@ -121,6 +122,7 @@
       ],
 
       'sources': [
+        'src/api/abi.cc',
         'src/debug-agent.cc',
         'src/async-wrap.cc',
         'src/env.cc',
