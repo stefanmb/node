@@ -114,6 +114,7 @@
 
       'include_dirs': [
         'include/node', # TODO Remove the 'node' subdir
+        'src/api', # TODO Better place to put internal API?
         'src',
         'tools/msvs/genfiles',
         'deps/uv/src/ares',

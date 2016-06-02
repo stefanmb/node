@@ -90,6 +90,8 @@ typedef int mode_t;
 extern char **environ;
 #endif
 
+#include "node_api_internal.h"
+
 namespace node {
 
 using v8::Array;
@@ -2325,6 +2327,8 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
   Local<String> exports_string = env->exports_string();
   Local<Object> exports = module->Get(exports_string)->ToObject(env->isolate());
 
+
+
   if (mp->nm_context_register_func != nullptr) {
     mp->nm_context_register_func(exports, module, env->context(), mp->nm_priv);
   } else if (mp->nm_register_func != nullptr) {
@@ -2512,6 +2516,9 @@ static void LinkedBinding(const FunctionCallbackInfo<Value>& args) {
   Local<Object> exports = Object::New(env->isolate());
   Local<String> exports_prop = String::NewFromUtf8(env->isolate(), "exports");
   module->Set(exports_prop, exports);
+
+  // TODO: Fix this up
+  node::api::internal::JS_InitObjectInternal(NULL, module);
 
   if (mod->nm_context_register_func != nullptr) {
     mod->nm_context_register_func(exports,
@@ -4041,6 +4048,8 @@ void Init(int* argc,
   int v8_argc;
   const char** v8_argv;
   ParseArgs(argc, argv, exec_argc, exec_argv, &v8_argc, &v8_argv);
+
+  printf(" size is %p\n", sizeof(Persistent<v8::Object>));
 
   // TODO(bnoordhuis) Intercept --prof arguments and start the CPU profiler
   // manually?  That would give us a little more control over its runtime

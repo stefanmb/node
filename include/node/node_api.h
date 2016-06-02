@@ -3,8 +3,8 @@
 #ifndef SRC_NODE_API_H_
 #define SRC_NODE_API_H_
 
+#include "node_api_types.h"
 #include "node_version.h"  // NODE_MODULE_VERSION
-#include "api_types.h"
 
 namespace node {
 namespace api {

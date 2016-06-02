@@ -2,8 +2,7 @@
 #include <string.h>
 
 #include "node.h"
-#include "api.h"
-
+#include "node_api.h"
 
 // TODO: Temp fix:
 namespace node {
@@ -11,8 +10,33 @@ bool node_is_initialized = false;
 node_module* modpending;
 }
 
+// TODO: May want to move these over to the header for performance reasons so they don't cross ABI
+// boundary, but get inlined into module code. These methods aren't really opaque, their logic
+// is part of the ABI contract so should be safe inlined into consumer code.
+JS_DEFINE_TypeChecker(Int32)
+JS_DEFINE_TypeChecker(Double);
+JS_DEFINE_TypeChecker(Boolean);
+JS_DEFINE_TypeChecker(String);
+JS_DEFINE_TypeChecker(Object);
+JS_DEFINE_TypeChecker(Buffer);
+JS_DEFINE_TypeChecker(Undefined);
+JS_DEFINE_TypeChecker(Null);
+JS_DEFINE_TypeChecker(Error);
+JS_DEFINE_TypeChecker(Function);
+
 namespace node {
 namespace api {
+
+NODE_MODULE_EXPORT void JS_SetNamedProperty(JSValue *object, const char * name, JSValue *value)
+{
+
+}
+
+// TODO: Reconcile this with Nan::New
+NODE_MODULE_EXPORT void JS_CreateObject(JSValue *object)
+{
+//TODO
+}
 
 static node_module* modlist_builtin;
 static node_module* modlist_linked;

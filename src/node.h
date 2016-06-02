@@ -41,7 +41,7 @@
 
 #include "v8.h"  // NOLINT(build/include_order)
 #include "node_version.h"  // NODE_MODULE_VERSION
-#include "api.h"
+#include "node_api.h"
 
 using namespace node::api;
 
